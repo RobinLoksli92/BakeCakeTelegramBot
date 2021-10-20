@@ -2,19 +2,22 @@ from dotenv import load_dotenv
 import os
 import telegram
 from telegram import Update
-from telegram import replymarkup
 from telegram.ext import Filters
 from telegram.ext import CallbackContext
 from telegram.ext import Updater
 from telegram.ext import CommandHandler, MessageHandler, CallbackQueryHandler
 from telegram import ReplyKeyboardMarkup
 from telegram import KeyboardButton
-from telegram.files.contact import Contact
+import json
+
+from telegram.utils.helpers import effective_message_type
 
 
 states_database = {}   # Стейт пользователя
 
 users_pd = {}          # Словарь с персональной инфой по пользователям
+
+users_dict = {}        # Словарь с ключем = id пользователя и значением в виде словаря с персональной инфой
 
 pd_agreement_keyboard = [
     [KeyboardButton('Согласен'), KeyboardButton('Не согласен')],
@@ -45,19 +48,18 @@ def start(update:Update, context:CallbackContext):
     return 'CHECK_PD_AGREEMENT'
 
 
-def check_pd_agreement(update:Update, context:CallbackContext):
+def pd_agreement_handler(update:Update, context:CallbackContext):
     user_reply = update.effective_message.text
     chat_id = update.effective_message.chat_id
 
     if user_reply == 'Согласен':
         user_last_name = update.effective_message.chat.last_name
         user_first_name = update.effective_message.chat.first_name
-        users_pd['Фамилия'] = user_last_name
-        users_pd['Имя'] = user_first_name
+        users_pd.update({'Имя': user_first_name, 'Фамилия': user_last_name})
         context.bot.send_message(
         chat_id=chat_id,
         text = f'{user_last_name} {user_first_name}, вы соглались на обработку ваших ПД.\n'
-               'Теперь введите пожалуйста ваш номер телефона или отправьте контакт',
+               'Теперь введите пожалуйста ваш номер телефона или отправьте контакт.',
                reply_markup = ReplyKeyboardMarkup(phone_number_keyboard, resize_keyboard=True, one_time_keyboard=True)
         )
         return 'TAKE_PHONE_NUMBER'
@@ -65,31 +67,36 @@ def check_pd_agreement(update:Update, context:CallbackContext):
 
     elif user_reply == 'Не согласен':
         context.bot.send_message(
-        chat_id=chat_id,
-        text = 'Вы отказались от обработки ваших ПД'
+        chat_id = chat_id,
+        text = 'Вы отказались от обработки ваших ПД. \n'
+                'Чтобы пользоваться нашим сервисом, вы должны согласится с обработкой персональной информации.',
+        reply_markup = ReplyKeyboardMarkup(pd_agreement_keyboard, resize_keyboard=True, one_time_keyboard=True)
         )
-        return 'START'
+        return 'CHECK_PD_AGREEMENT'
 
 
-def take_phone_number(update:Update, context:CallbackContext):
-    user_input = update.effective_message.text    #Здесь то, что ввел пользователь. Должен быть номер телефона
+def phone_number_handler(update:Update, context:CallbackContext):
+    user_input = update.effective_message.text    
     chat_id = update.effective_message.chat_id
 
     if update.message.contact is not None:
         user_phone_number = update.message.contact.phone_number
-        users_pd['Номер телефона'] = user_phone_number  
+        users_pd.update({'Номер телефона': user_phone_number})
         context.bot.send_message(                     
         chat_id = chat_id,
-        text = 'Теперь, укажите адрес доставки',
+        text = f'Ваше номер телефона: {user_phone_number}.'
+               'Теперь, введите адрес доставки или поделитесь своим местоположением с помощью кнопки ниже.',
         reply_markup=ReplyKeyboardMarkup(address_keyboard, resize_keyboard=True, one_time_keyboard=True)
         )
         return 'TAKE_ADDRESS'
 
     elif user_input.isdigit():
-        users_pd['Номер телефона'] = user_input        
+        user_phone_number = user_input
+        users_pd.update({'Номер телефона': user_phone_number})     
         context.bot.send_message(                     
             chat_id = chat_id,
-            text = 'Теперь, укажите адрес доставки',
+            text = f'Ваш номер телефона: {user_input}.\n'
+                   'Теперь, введите адрес доставки или поделитесь своим местоположением с помощью кнопки ниже.',
             reply_markup=ReplyKeyboardMarkup(address_keyboard, resize_keyboard=True, one_time_keyboard=True)
         )
           
@@ -104,21 +111,23 @@ def take_phone_number(update:Update, context:CallbackContext):
         return 'TAKE_PHONE_NUMBER'
 
     
-def take_address(update:Update, context:CallbackContext):
+def address_handler(update:Update, context:CallbackContext):
     user_input = update.effective_message.text   
     chat_id = update.effective_message.chat_id
+    user_id = update.effective_message.from_user.id
 
     if update.message.location is not None:
-        user_location = update.message.location 
-        context.bot.send_message(
-            chat_id=chat_id,
-            text = f'Ваш адрес: {user_location}'
-        )
+        user_location = update.message.location
+        users_pd.update({'Адрес': user_location})
+        users_dict.update({user_id: users_pd})
+        with open('users_contacts.json', 'w') as file:
+            json.dump(users_dict, file)    
+
     elif user_input:
-        context.bot.send_message(
-            chat_id=chat_id,
-            text = f'Ваш адрес: {user_input}'
-        )
+        users_pd.update({'Адрес': user_input})
+        users_dict.update({user_id: users_pd})
+        with open('users_contacts.json', 'w') as file:
+            json.dump(users_dict, file)
 
 
 def main_menu_handler(update:Update, context: CallbackContext):
@@ -142,9 +151,9 @@ def handle_user_reply(update:Update, context:CallbackContext):
 
     states_functions = {
         'START' : start,
-        'CHECK_PD_AGREEMENT' : check_pd_agreement,
-        'TAKE_PHONE_NUMBER' : take_phone_number,
-        'TAKE_ADDRESS' : take_address,
+        'CHECK_PD_AGREEMENT' : pd_agreement_handler,
+        'TAKE_PHONE_NUMBER' : phone_number_handler,
+        'TAKE_ADDRESS' : address_handler,
 
     }
 
@@ -161,12 +170,16 @@ def main():
     dispatcher = updater.dispatcher
     dispatcher.add_handler(CommandHandler('start', handle_user_reply))
     dispatcher.add_handler(MessageHandler(Filters.text, handle_user_reply))
-    dispatcher.add_handler(MessageHandler(Filters.contact & Filters.location, handle_user_reply))
+    dispatcher.add_handler(MessageHandler(Filters.contact, handle_user_reply))
+    dispatcher.add_handler(MessageHandler(Filters.location, handle_user_reply))
     dispatcher.add_handler(CallbackQueryHandler(handle_user_reply))
     updater.start_polling()
+    # with open('users_contacts.json', 'r') as file:
+    #     users_json_dict = json.load(file)
+    # for id in users_json_dict:
+    #     print(users_json_dict[id]['Фамилия'])
 
 
 if __name__ == '__main__':
     main()
 
-#test
