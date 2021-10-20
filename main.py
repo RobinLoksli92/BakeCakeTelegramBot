@@ -7,8 +7,8 @@ from telegram.ext import Filters
 from telegram.ext import CallbackContext
 from telegram.ext import Updater
 from telegram.ext import CommandHandler, MessageHandler, CallbackQueryHandler
-from telegram import InlineKeyboardMarkup
-from telegram import InlineKeyboardButton
+from telegram import ReplyKeyboardMarkup
+from telegram import KeyboardButton
 
 
 states_database = {}   # Стейт пользователя
@@ -16,8 +16,7 @@ states_database = {}   # Стейт пользователя
 users_pd = {}          # Словарь с персональной инфой по пользователям
 
 main_menu_keyboard = [
-    [InlineKeyboardButton('Согласен', callback_data='Agree')],
-    [InlineKeyboardButton('Не согласен', callback_data='Disagree')]
+    [KeyboardButton('Согласен'),KeyboardButton('Не согласен')],
 ]
 
 
@@ -32,16 +31,16 @@ def start(update:Update, context:CallbackContext):
         context.bot.send_document(
             chat_id = chat_id,
             document = document,
-            reply_markup = InlineKeyboardMarkup(main_menu_keyboard)
+            reply_markup = ReplyKeyboardMarkup(main_menu_keyboard, resize_keyboard=True, one_time_keyboard=True)
         )
     return 'CHECK_PD_AGREEMENT'
 
 
 def check_pd_agreement(update:Update, context:CallbackContext):
-    data = update.callback_query.data
+    user_reply = update.effective_message.text
     chat_id = update.effective_message.chat_id
 
-    if data == 'Agree':
+    if user_reply == 'Согласен':
         user_last_name = update.effective_message.chat.last_name
         user_first_name = update.effective_message.chat.first_name
         users_pd['Фамилия'] = user_last_name
@@ -54,7 +53,7 @@ def check_pd_agreement(update:Update, context:CallbackContext):
         return 'TAKE_PHONE_NUMBER'
         
 
-    elif data == 'Disagree':
+    elif user_reply == 'Не согласен':
         context.bot.send_message(
         chat_id=chat_id,
         text = 'Вы отказались от обработки ваших ПД'
