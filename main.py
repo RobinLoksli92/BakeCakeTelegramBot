@@ -10,16 +10,13 @@ from telegram import ReplyKeyboardMarkup
 from telegram import KeyboardButton
 import json
 
-from telegram.utils.helpers import effective_message_type
-
 
 states_database = {}   # Стейт пользователя
 
 users_pd = {}          # Словарь с персональной инфой по пользователям
 
-       # Словарь с ключем = id пользователя и значением в виде словаря с персональной инфой
-
 json_dict = {}
+
 
 pd_agreement_keyboard = [
     [KeyboardButton('Согласен'), KeyboardButton('Не согласен')],
@@ -198,7 +195,6 @@ def main():
     #     users_json_dict = json.load(file)
     # print(users_json_dict)
     
-
 
 if __name__ == '__main__':
     main()
