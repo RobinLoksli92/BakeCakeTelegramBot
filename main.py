@@ -9,11 +9,12 @@ from telegram.ext import CommandHandler, MessageHandler, CallbackQueryHandler
 from telegram import ReplyKeyboardMarkup
 from telegram import KeyboardButton
 import json
+import logging
 
 
-states_database = {}   # Стейт пользователя
+states_database = {}   
 
-users_pd = {}          # Словарь с персональной инфой по пользователям
+users_pd = {}          
 
 json_dict = {}
 
@@ -29,6 +30,16 @@ phone_number_keyboard = [
 address_keyboard = [
     [KeyboardButton('Отправить адрес', request_location=True)]
 ]
+pass_keyboard = [['Пропустить']]
+main_keyboard = [
+    [KeyboardButton('Собрать торт'), KeyboardButton('Заказы')]
+]
+parametr_1_keyboard = [['1 уровень', '2 уровня', '3 уровня']]
+parametr_2_keyboard = [['Квадрат', 'Круг', 'Прямоугольник']]
+parametr_3_keyboard = [['Без топпинга', 'Белый соус', 'Карамельный сироп'], ['Кленовый сироп', 'Клубничный сироп'], ['Черничный сироп', 'Молочный шоколад']]
+parametr_4_keyboard = [['Ежевика', 'Малина', 'Голубика', 'Клубника']]
+parametr_5_keyboard = [['Фисташки', 'Безе', 'Фундук', 'Пекан'], ['Маршмеллоу', 'Фундук', 'Марципан', 'Пропустить']]
+to_order_keyboard = [['Заказать торт', 'Собрать заново']]
 
 
 def start(update:Update, context:CallbackContext):
@@ -132,8 +143,122 @@ def address_handler(update:Update, context:CallbackContext):
             chat_id=chat_id,
             text = 'Предоставленная информация сохранена в базе, можете приступать к заказу'
         )
+        update.message.reply_text('Собрать новый торт или посмотреть заказы?',
+            reply_markup=ReplyKeyboardMarkup(main_keyboard, resize_keyboard=True, one_time_keyboard=True))
+        return 'MAIN_MENU'
+
 
 def main_menu_handler(update:Update, context: CallbackContext):
+    chat_id = update.message.chat_id
+    context.bot.send_message(
+        chat_id=chat_id,
+        text = 'Вы уже зарегистрированы, вы молодец'
+    )
+    update.message.reply_text(
+        'Собрать новый торт или посмотреть заказы?',
+        reply_markup=ReplyKeyboardMarkup(main_keyboard, resize_keyboard=True, one_time_keyboard=True)
+    )
+    return 'MAIN_MENU' 
+
+
+def main_menu(update:Update, context: CallbackContext):
+    user_message = update.effective_message.text
+    if user_message == 'Собрать торт':
+        update.message.reply_text('Количество уровней',
+                                  reply_markup=ReplyKeyboardMarkup(parametr_1_keyboard, resize_keyboard=True,
+                                                                   one_time_keyboard=True))
+        return 'PARAMETR_1'
+    elif user_message == 'Заказы':
+        update.message.reply_text('Здесь будут Ваши заказы')
+        return 'ORDERS'
+
+
+def parameter_1(update:Update, context:CallbackContext):
+    user_message = update.message.text
+    update.message.reply_text('Форма',
+                              reply_markup=ReplyKeyboardMarkup(parametr_2_keyboard, resize_keyboard=True,
+                                                               one_time_keyboard=True))
+    return 'PARAMETR_2'
+
+
+def parameter_2(update:Update, context:CallbackContext):
+    user_message = update.message.text
+    update.message.reply_text('Топпинг',
+                              reply_markup=ReplyKeyboardMarkup(parametr_3_keyboard, resize_keyboard=True,
+                                                               one_time_keyboard=True))
+    return 'PARAMETR_3'
+
+
+def parameter_3(update:Update, context:CallbackContext):
+    user_message = update.message.text
+    update.message.reply_text('Ягоды',
+                              reply_markup=ReplyKeyboardMarkup(parametr_4_keyboard, resize_keyboard=True,
+                                                               one_time_keyboard=True))
+    return 'PARAMETR_4'
+
+
+def parameter_4(update:Update, context:CallbackContext):
+    user_message = update.message.text
+    update.message.reply_text('Декор',
+                              reply_markup=ReplyKeyboardMarkup(parametr_5_keyboard, resize_keyboard=True,
+                                                               one_time_keyboard=True))
+    return 'PARAMETR_5'
+
+
+def parameter_5(update:Update, context:CallbackContext):
+    update.message.reply_text('Надпись',
+                              reply_markup=ReplyKeyboardMarkup(pass_keyboard, resize_keyboard=True,
+                                                               one_time_keyboard=True))
+    chat_id = update.effective_message.chat_id
+    return 'PARAMETR_6'
+
+
+def parameter_6(update:Update, context:CallbackContext):
+    update.message.reply_text('Комментарий к заказу',
+                              reply_markup=ReplyKeyboardMarkup(pass_keyboard, resize_keyboard=True,
+                                                               one_time_keyboard=True))
+    return 'PARAMETR_7'
+
+
+def parameter_7(update:Update, context:CallbackContext):
+    update.message.reply_text('Данные получателя')
+    return 'PARAMETR_8'
+
+
+def parameter_8(update:Update, context:CallbackContext):
+    update.message.reply_text('Дата доставки')
+    return 'PARAMETR_9'
+
+
+def parameter_9(update:Update, context:CallbackContext):
+    update.message.reply_text('Время доставки')
+    return 'PARAMETR_10'
+
+
+def parameter_10(update:Update, context:CallbackContext):
+    update.message.reply_text('Введите промокод',
+                              reply_markup=ReplyKeyboardMarkup(pass_keyboard, resize_keyboard=True,
+                                                               one_time_keyboard=True))
+    return 'TO_ORDER'
+
+
+def to_order(update:Update, context:CallbackContext):
+    update.message.reply_text('Заказать торт?',
+                              reply_markup=ReplyKeyboardMarkup(to_order_keyboard, resize_keyboard=True,
+                                                               one_time_keyboard=True))
+
+    return 'CHECK_TO_ORDER'
+
+
+def check_to_order(update:Update, context:CallbackContext):
+    user_message = update.message.text
+    if user_message == 'Заказать торт':
+        update.message.reply_text('Торт заказан!')
+        return 'START'
+    elif user_message == 'Собрать заново':
+        return 'START'
+
+def get_orders(update:Update, context:CallbackContext):
     pass
 
 
@@ -156,13 +281,10 @@ def handle_user_reply(update:Update, context:CallbackContext):
 
     if user_reply == '/start':
         if str(user_id) in users_json_dict:
-            context.bot.send_message(
-                chat_id=chat_id,
-                text = 'Вы уже зарегистрированы, вы молодец'
-            )   
+            user_state = 'MAIN_MENU_HANDLER'       
         else:
             user_state = 'START'
-
+        
     else:
         user_state = states_database.get(chat_id)
 
@@ -171,9 +293,23 @@ def handle_user_reply(update:Update, context:CallbackContext):
         'CHECK_PD_AGREEMENT' : pd_agreement_handler,
         'TAKE_PHONE_NUMBER' : phone_number_handler,
         'TAKE_ADDRESS' : address_handler,
-
+        'MAIN_MENU_HANDLER' : main_menu_handler,
+        'MAIN_MENU': main_menu,
+        'PARAMETR_1': parameter_1,
+        'PARAMETR_2': parameter_2,
+        'PARAMETR_3': parameter_3,
+        'PARAMETR_4': parameter_4,
+        'PARAMETR_5': parameter_5,
+        'PARAMETR_6': parameter_6,
+        'PARAMETR_7': parameter_7,
+        'PARAMETR_8': parameter_8,
+        'PARAMETR_9': parameter_9,
+        'PARAMETR_10': parameter_10,
+        'ORDERS': get_orders,
+        'TO_ORDER': to_order,
+        'CHECK_TO_ORDER': check_to_order,
     }
-
+    
     state_handler = states_functions[user_state]
     next_state = state_handler(update, context)
     states_database.update({chat_id: next_state})
@@ -181,6 +317,10 @@ def handle_user_reply(update:Update, context:CallbackContext):
 
 def main():
     load_dotenv()
+    logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO)
+    logger = logging.getLogger(__name__)
     
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     updater = Updater(token)
@@ -190,11 +330,8 @@ def main():
     dispatcher.add_handler(MessageHandler(Filters.contact, handle_user_reply))
     dispatcher.add_handler(MessageHandler(Filters.location, handle_user_reply))
     dispatcher.add_handler(CallbackQueryHandler(handle_user_reply))
+
     updater.start_polling()
-    # with open('users_contacts.json', 'r', encoding='utf-8') as file:
-    #     users_json_dict = json.load(file)
-    # print(users_json_dict)
-    
 
 if __name__ == '__main__':
     main()
