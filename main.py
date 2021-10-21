@@ -17,7 +17,9 @@ states_database = {}   # Стейт пользователя
 
 users_pd = {}          # Словарь с персональной инфой по пользователям
 
-users_dict = {}        # Словарь с ключем = id пользователя и значением в виде словаря с персональной инфой
+       # Словарь с ключем = id пользователя и значением в виде словаря с персональной инфой
+
+json_dict = {}
 
 pd_agreement_keyboard = [
     [KeyboardButton('Согласен'), KeyboardButton('Не согласен')],
@@ -96,8 +98,7 @@ def phone_number_handler(update:Update, context:CallbackContext):
         context.bot.send_message(                     
             chat_id = chat_id,
             text = f'Ваш номер телефона: {user_input}.\n'
-                   'Теперь, введите адрес доставки или поделитесь своим местоположением с помощью кнопки ниже.',
-            reply_markup=ReplyKeyboardMarkup(address_keyboard, resize_keyboard=True, one_time_keyboard=True)
+                   'Теперь, введите адрес доставки или поделитесь своим местоположением с помощью кнопки ниже.'
         )
           
         return 'TAKE_ADDRESS'
@@ -114,30 +115,42 @@ def phone_number_handler(update:Update, context:CallbackContext):
 def address_handler(update:Update, context:CallbackContext):
     user_input = update.effective_message.text   
     chat_id = update.effective_message.chat_id
-    user_id = update.effective_message.from_user.id
+    user_id = update.message.from_user.id
 
-    if update.message.location is not None:
-        user_location = update.message.location
-        users_pd.update({'Адрес': user_location})
-        users_dict.update({user_id: users_pd})
-        with open('users_contacts.json', 'w') as file:
-            json.dump(users_dict, file)    
-
-    elif user_input:
+    # if update.message.location is not None:
+    #     user_location = update.message.location
+    #     users_pd.update({'Адрес': user_location})
+    #     users_dict.update({user_id: users_pd})
+    #     with open('users_contacts.json', 'a', encoding='utf-8') as file:
+    #         json.dump(users_dict, file, ensure_ascii=False)    
+    
+    if user_input:
+        users_dict = {} 
         users_pd.update({'Адрес': user_input})
-        users_dict.update({user_id: users_pd})
-        with open('users_contacts.json', 'w') as file:
-            json.dump(users_dict, file)
-
+        users_dict[user_id] = users_pd
+        json_dict.update(users_dict)
+        with open('users_contacts.json', 'w', encoding='utf-8') as file:
+            json.dump(json_dict, file, ensure_ascii=False)
+        context.bot.send_message(
+            chat_id=chat_id,
+            text = 'Предоставленная информация сохранена в базе, можете приступать к заказу'
+        )
 
 def main_menu_handler(update:Update, context: CallbackContext):
     pass
 
 
 def handle_user_reply(update:Update, context:CallbackContext):
+    
+    with open('users_contacts.json', 'r', encoding='utf-8') as file:
+        users_json_dict = json.load(file)
+        json_dict.update(users_json_dict)
+
     if update.message:
         user_reply = update.message.text
         chat_id = update.message.chat_id
+        user_id = update.message.from_user.id
+        
     elif update.callback_query:
         user_reply = update.callback_query.data  
         chat_id = update.callback_query.message.chat_id
@@ -145,7 +158,14 @@ def handle_user_reply(update:Update, context:CallbackContext):
         return
 
     if user_reply == '/start':
-        user_state = 'START'
+        if str(user_id) in users_json_dict:
+            context.bot.send_message(
+                chat_id=chat_id,
+                text = 'Вы уже зарегистрированы, вы молодец'
+            )   
+        else:
+            user_state = 'START'
+
     else:
         user_state = states_database.get(chat_id)
 
@@ -164,7 +184,7 @@ def handle_user_reply(update:Update, context:CallbackContext):
 
 def main():
     load_dotenv()
-
+    
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     updater = Updater(token)
     dispatcher = updater.dispatcher
@@ -174,10 +194,10 @@ def main():
     dispatcher.add_handler(MessageHandler(Filters.location, handle_user_reply))
     dispatcher.add_handler(CallbackQueryHandler(handle_user_reply))
     updater.start_polling()
-    # with open('users_contacts.json', 'r') as file:
+    # with open('users_contacts.json', 'r', encoding='utf-8') as file:
     #     users_json_dict = json.load(file)
-    # for id in users_json_dict:
-    #     print(users_json_dict[id]['Фамилия'])
+    # print(users_json_dict)
+    
 
 
 if __name__ == '__main__':
