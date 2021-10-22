@@ -19,10 +19,6 @@ users_pd = {}
 
 json_contacts = {}
 
-json_order = {} 
-
-# global order
-
 order = {'Статус заказа':'Заявка обрабатывается'}
 
 price = {
@@ -393,12 +389,18 @@ def to_order(update:Update, context:CallbackContext):
             total_price += price.get(i)
         except:
             pass
-    print(total_price)
     if order['Дата'] == 'В течение 24 часов':
         total_price = int(total_price * 1.2)
 
     user_input_promo = update.effective_message.text
+    user_id = update.message.from_user.id
     order.update({'Стоимость': total_price})
+
+    # orders.append(order)
+    # orders_dict[user_id] = orders
+    # json_orders.update(orders_dict)
+    # print(json_orders)
+
     update.message.reply_text('Стоимость торта составит {} рублей'.format(total_price))
     return 'CHECK_TO_ORDER'
 
@@ -407,24 +409,24 @@ def check_to_order(update:Update, context:CallbackContext):
     global order
     user_message = update.message.text
     user_id = update.message.from_user.id
-    orders = []
-    orders_dict = {}
-    if user_message == 'Заказать торт':
-        with open('orders.json', 'r', encoding='utf-8') as file:
-            latest_orders = json.load(file)
-        if str(user_id) in latest_orders:
-            user_orders = latest_orders[str(user_id)]
-            user_orders.append(order)
-            orders_dict[user_id] = user_orders
-            json_order.update(orders_dict)
-        else:
-            json_order.update(latest_orders)
-            orders.append(order)
-            orders_dict[user_id] = orders
-            json_order.update(orders_dict)
 
+    orders = []
+    json_orders = {}
+    with open('orders.json', 'r', encoding='utf-8') as file:
+        latest_orders = json.load(file)
+
+    if str(user_id) in latest_orders:
+        orders = latest_orders[str(user_id)]  
+        orders.append(order)
+        json_orders[user_id] = orders
+    else:
+        json_orders.update(latest_orders)
+        orders.append(order)
+        json_orders.update({user_id: orders})
+
+    if user_message == 'Заказать торт':
         with open('orders.json', 'w', encoding='utf-8') as file:
-            json.dump(json_order, file, ensure_ascii=False)
+            json.dump(json_orders, file, ensure_ascii=False)
         update.message.reply_text(
             'Торт заказан!',
             reply_markup=ReplyKeyboardMarkup(main_keyboard, resize_keyboard=True, one_time_keyboard=True)
