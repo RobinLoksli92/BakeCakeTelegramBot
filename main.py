@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 import os
 import telegram
 from telegram import Update
+from telegram import replymarkup
 from telegram.ext import Filters
 from telegram.ext import CallbackContext
 from telegram.ext import Updater
@@ -16,12 +17,13 @@ states_database = {}
 
 users_pd = {}          
 
-json_dict = {}
+json_contacts = {}
 
-orders = []
+json_order = {} 
 
-global order
-order = {}
+# global order
+
+order = {'Статус заказа':'Заявка обрабатывается'}
 
 price = {
     '1 уровень': 400,
@@ -170,9 +172,9 @@ def address_handler(update:Update, context:CallbackContext):
         users_dict = {} 
         users_pd.update({'Адрес': user_input})
         users_dict[user_id] = users_pd
-        json_dict.update(users_dict)
+        json_contacts.update(users_dict)
         with open('users_contacts.json', 'w', encoding='utf-8') as file:
-            json.dump(json_dict, file, ensure_ascii=False)
+            json.dump(json_contacts, file, ensure_ascii=False)
         context.bot.send_message(
             chat_id=chat_id,
             text = 'Предоставленная информация сохранена в базе, можете приступать к заказу'
@@ -197,14 +199,47 @@ def main_menu_handler(update:Update, context: CallbackContext):
 
 def main_menu(update:Update, context: CallbackContext):
     user_message = update.effective_message.text
+    user_id = update.message.from_user.id
+    chat_id = update.message.chat_id
     if user_message == 'Собрать торт':
         update.message.reply_text('Количество уровней',
                                   reply_markup=ReplyKeyboardMarkup(parametr_1_keyboard, resize_keyboard=True,
                                                                    one_time_keyboard=True))
         return 'PARAMETR_1'
+
     elif user_message == 'Заказы':
-        update.message.reply_text('Здесь будут Ваши заказы')
-        return 'ORDERS'
+        with open('orders.json', 'r', encoding='utf-8') as file:
+            orders_info = json.load(file)
+        if str(user_id) in orders_info:
+            chat_id = update.message.chat_id 
+            order_info = orders_info[str(user_id)]
+            for order in order_info:
+                order_status = order.get('Статус заказа')
+                cake_lvls = order.get('Количество уровней')
+                cake_form = order.get('Форма')
+                cake_toping = order.get('Топпинг')
+                cake_berries = order.get('Ягоды')
+                cake_decoration = order.get('Декор')
+
+            context.bot.send_message(
+                chat_id=chat_id,
+                text = f'Статус заказа: {order_status}\n'
+                    f'Количество уровней: {cake_lvls}\n'
+                    f'Форма: {cake_form}\n'
+                    f'Топпинг: {cake_toping}\n'
+                    f'Ягоды: {cake_berries}\n'
+                    f'Декор: {cake_decoration}',
+
+                reply_markup = ReplyKeyboardMarkup(main_keyboard, resize_keyboard=True, one_time_keyboard=True)
+            )
+            return 'MAIN_MENU'
+        else:
+            context.bot.send_message(
+                chat_id = chat_id,
+                text = 'У вас нет ни одного заказа',
+                reply_markup = ReplyKeyboardMarkup(main_keyboard, resize_keyboard=True, one_time_keyboard=True)
+            )
+            return 'MAIN_MENU'
 
 
 def parameter_1(update:Update, context:CallbackContext):
@@ -268,31 +303,43 @@ def parameter_6(update:Update, context:CallbackContext):
 
 
 def parameter_7(update:Update, context:CallbackContext):
-    update.message.reply_text('Выберите контакты по умолчанию или введите другой',
-                              reply_markup=ReplyKeyboardMarkup(ok_keyboard, resize_keyboard=True,
-                                                               one_time_keyboard=True))
-    with open("users_contacts.json", "r") as read_file:
-        data = json.load(read_file)['200466788']
+    user_input = update.effective_message.text
+    user_id = update.message.from_user.id
+
+    if user_input != 'Пропустить':
+        order.update({'Комментарий к заказу': user_input})
+
+    with open("users_contacts.json", 'r', encoding='utf-8') as read_file:
+        data = json.load(read_file)[str(user_id)]
         contact = '{} {} {}'.format(data['Имя'], data['Фамилия'], data['Номер телефона'])
         order.update({'Получатель': contact})
-    update.message.reply_text(contact)
+    update.message.reply_text(
+        text = f'Контакты по умолчанию: {contact}\n'
+                'Выберите контакты по умолчанию или введите новые в формате: имя фамилия, номер телефона',
+        reply_markup=ReplyKeyboardMarkup(ok_keyboard, resize_keyboard=True, one_time_keyboard=True)
+    ) 
+                                                        
     return 'PARAMETR_7_1'
+
 
 def parametr_7_1(update:Update, context:CallbackContext):
     user_input = update.effective_message.text
+    user_id = update.message.from_user.id
+
     if user_input != 'Выбрать по умолчанию':
         order.update({'Получатель': user_input})
-    update.message.reply_text('Выберите адрес по умолчанию или введите другой',
-                              reply_markup=ReplyKeyboardMarkup(ok_keyboard, resize_keyboard=True,
-                                                               one_time_keyboard=True))
-    with open("users_contacts.json", "r") as read_file:
-        data = json.load(read_file)['200466788']
+    
+    with open("users_contacts.json", 'r', encoding='utf-8') as read_file:
+        data = json.load(read_file)[str(user_id)]
         address = data['Адрес']
         order.update({'Адрес': address})
-    update.message.reply_text(address)
-
+    update.message.reply_text(f'Адрес по умолчанию: {address}\n'
+                               'Выберите адрес по умолчанию или введите другой',
+                                reply_markup=ReplyKeyboardMarkup(ok_keyboard, resize_keyboard=True, one_time_keyboard=True)
+    )
 
     return 'PARAMETR_8'
+
 
 def parameter_8(update:Update, context:CallbackContext):
     user_input = update.effective_message.text
@@ -306,6 +353,7 @@ def parameter_8(update:Update, context:CallbackContext):
     return 'PARAMETR_9'
 
 import re
+
 
 def parameter_9(update:Update, context:CallbackContext):
     user_input = update.effective_message.text
@@ -348,38 +396,54 @@ def to_order(update:Update, context:CallbackContext):
     print(total_price)
     if order['Дата'] == 'В течение 24 часов':
         total_price = int(total_price * 1.2)
-    print(total_price)
-    user_input = update.effective_message.text
+
+    user_input_promo = update.effective_message.text
     order.update({'Стоимость': total_price})
     update.message.reply_text('Стоимость торта составит {} рублей'.format(total_price))
-
     return 'CHECK_TO_ORDER'
 
 
 def check_to_order(update:Update, context:CallbackContext):
     global order
     user_message = update.message.text
+    user_id = update.message.from_user.id
+    orders = []
+    orders_dict = {}
     if user_message == 'Заказать торт':
-        update.message.reply_text('Торт заказан!')
+        with open('orders.json', 'r', encoding='utf-8') as file:
+            latest_orders = json.load(file)
+        if str(user_id) in latest_orders:
+            user_orders = latest_orders[str(user_id)]
+            user_orders.append(order)
+            orders_dict[user_id] = user_orders
+            json_order.update(orders_dict)
+        else:
+            json_order.update(latest_orders)
+            orders.append(order)
+            orders_dict[user_id] = orders
+            json_order.update(orders_dict)
+
         with open('orders.json', 'w', encoding='utf-8') as file:
-            json.dump(order, file, ensure_ascii=False)
+            json.dump(json_order, file, ensure_ascii=False)
+        update.message.reply_text(
+            'Торт заказан!',
+            reply_markup=ReplyKeyboardMarkup(main_keyboard, resize_keyboard=True, one_time_keyboard=True)
+        )
+        return 'MAIN_MENU'
+
     elif user_message == 'Собрать заново':
-        order = {}
-
-    update.message.reply_text('Вы перенаправлены в Главное меню',
-                              reply_markup=ReplyKeyboardMarkup(main_keyboard, resize_keyboard=True,
-                                                               one_time_keyboard=True))
-    return 'MAIN_MENU_HANDLER'
-
-def get_orders(update:Update, context:CallbackContext):
-    pass
+        order = {'Статус заказа':'Заявка обрабатывается'}
+        update.message.reply_text(
+            'Вы перенаправлены в Главное меню для повторного сбора торта',
+            reply_markup=ReplyKeyboardMarkup(main_keyboard, resize_keyboard=True, one_time_keyboard=True)
+        )
+        return 'MAIN_MENU'
 
 
 def handle_user_reply(update:Update, context:CallbackContext):
-    
     with open('users_contacts.json', 'r', encoding='utf-8') as file:
         users_json_dict = json.load(file)
-        json_dict.update(users_json_dict)
+        json_contacts.update(users_json_dict)
 
     if update.message:
         user_reply = update.message.text
@@ -419,7 +483,6 @@ def handle_user_reply(update:Update, context:CallbackContext):
         'PARAMETR_8': parameter_8,
         'PARAMETR_9': parameter_9,
         'PARAMETR_10': parameter_10,
-        'ORDERS': get_orders,
         'TO_ORDER': to_order,
         'CHECK_TO_ORDER': check_to_order,
     }
