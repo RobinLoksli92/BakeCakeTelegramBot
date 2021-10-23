@@ -414,13 +414,14 @@ def check_to_order(update:Update, context:CallbackContext):
     json_orders = {}
     with open('orders.json', 'r', encoding='utf-8') as file:
         latest_orders = json.load(file)
+    json_orders.update(latest_orders)
 
     if str(user_id) in latest_orders:
-        orders = latest_orders[str(user_id)]  
+        orders = latest_orders[str(user_id)]
+        del json_orders[str(user_id)]  
         orders.append(order)
         json_orders[user_id] = orders
     else:
-        json_orders.update(latest_orders)
         orders.append(order)
         json_orders.update({user_id: orders})
 
