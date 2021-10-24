@@ -13,11 +13,13 @@ import json
 import logging
 from datetime import datetime, timedelta
 
+
 states_database = {}
 users_pd = {}
 json_contacts = {}
 order = {'Статус заказа': 'Заявка обрабатывается'}
 promocodes = ['ТОРТ']
+
 price = {
     '1 уровень': 400,
     '2 уровня': 750,
@@ -59,6 +61,7 @@ date_keyboard = [['В ближайшее время'], ['НАЗАД', 'ГЛАВ�
 main_keyboard = [
     [KeyboardButton('Собрать торт'), KeyboardButton('Заказы')]
 ]
+
 parametr_1_keyboard = [['1 уровень', '2 уровня', '3 уровня'], ['ГЛАВНОЕ МЕНЮ']]
 parametr_2_keyboard = [['Квадрат', 'Круг', 'Прямоугольник'], ['НАЗАД', 'ГЛАВНОЕ МЕНЮ']]
 parametr_3_keyboard = [['Без топпинга', 'Белый соус', 'Карамельный сироп'], ['Кленовый сироп', 'Клубничный сироп'],
@@ -66,7 +69,7 @@ parametr_3_keyboard = [['Без топпинга', 'Белый соус', 'Ка�
 parametr_4_keyboard = [['Ежевика', 'Малина', 'Голубика'], ['Клубника', 'Пропустить'], ['НАЗАД', 'ГЛАВНОЕ МЕНЮ']]
 parametr_5_keyboard = [['Фисташки', 'Безе', 'Пекан'], ['Маршмеллоу', 'Фундук', 'Марципан'], ['Пропустить'], ['НАЗАД', 'ГЛАВНОЕ МЕНЮ']]
 to_order_keyboard = [['Заказать торт'], ['НАЗАД', 'ГЛАВНОЕ МЕНЮ']]
-
+user_orders_keyboard = [['Главное меню']]
 
 def start(update: Update, context: CallbackContext):
     chat_id = update.effective_message.chat_id
@@ -191,37 +194,83 @@ def main_menu(update: Update, context: CallbackContext):
                                   reply_markup=ReplyKeyboardMarkup(parametr_1_keyboard, resize_keyboard=True,
                                                                    one_time_keyboard=True))
         return 'PARAMETR_1'
+
     elif user_message == 'Заказы':
         with open('orders.json', 'r', encoding='utf-8') as file:
             orders_info = json.load(file)
         if str(user_id) in orders_info:
-            chat_id = update.message.chat_id
-            order_info = orders_info[str(user_id)]
-            for order in order_info:
-                order_status = order.get('Статус заказа')
-                cake_lvls = order.get('Количество уровней')
-                cake_form = order.get('Форма')
-                cake_toping = order.get('Топпинг')
-                cake_berries = order.get('Ягоды')
-                cake_decoration = order.get('Декор')
-            context.bot.send_message(
-                chat_id=chat_id,
-                text=f'Статус заказа: {order_status}\n'
-                     f'Количество уровней: {cake_lvls}\n'
-                     f'Форма: {cake_form}\n'
-                     f'Топпинг: {cake_toping}\n'
-                     f'Ягоды: {cake_berries}\n'
-                     f'Декор: {cake_decoration}',
-                reply_markup=ReplyKeyboardMarkup(main_keyboard, resize_keyboard=True, one_time_keyboard=True)
-            )
-            return 'MAIN_MENU'
+
+            chat_id = update.message.chat_id 
+            orders_list = orders_info[str(user_id)]
+            for order in orders_list:
+                text = create_order_text_for_user(order)
+                new_keyboard = create_keyboard_for_user_order(order)
+                if new_keyboard not in user_orders_keyboard:
+                    user_orders_keyboard.append(new_keyboard)
+                context.bot.send_message(
+                    chat_id=chat_id,
+                    text = text,
+                    reply_markup = ReplyKeyboardMarkup(user_orders_keyboard, resize_keyboard=True, one_time_keyboard=True)
+                )
+            return 'FILTER_THE_ORDERS'
         else:
             context.bot.send_message(
-                chat_id=chat_id,
-                text='У вас нет ни одного заказа',
-                reply_markup=ReplyKeyboardMarkup(main_keyboard, resize_keyboard=True, one_time_keyboard=True)
+                chat_id = chat_id,
+                text = 'У вас нет ни одного заказа',
+                reply_markup = ReplyKeyboardMarkup(main_keyboard, resize_keyboard=True, one_time_keyboard=True)
             )
             return 'MAIN_MENU'
+
+
+def get_filtered_oreders(update:Update, context:CallbackContext):
+    user_reply = update.message.text
+    user_id = update.message.from_user.id
+    chat_id = update.message.chat_id
+    status_list = ['Заявка обрабатывается', 'Готовим ваш торт', 'Торт в пути', 'Торт у вас']
+    with open('orders.json', 'r', encoding='utf-8') as file:
+        orders_info = json.load(file)
+    orders_list = orders_info[str(user_id)]
+    if user_reply:    
+        if user_reply == 'Главное меню':
+            context.bot.send_message(
+                    chat_id = chat_id,
+                    text = 'Главное меню',
+                    reply_markup = ReplyKeyboardMarkup(main_keyboard, resize_keyboard=True, one_time_keyboard=True)
+                ) 
+            return 'MAIN_MENU'
+        elif user_reply in status_list:
+            for order in orders_list:
+                if order['Статус заказа'] == user_reply:
+                    text = create_order_text_for_user(order)
+                    context.bot.send_message(
+                        chat_id = chat_id,
+                        text = text,
+                        reply_markup = ReplyKeyboardMarkup(user_orders_keyboard, resize_keyboard=True, one_time_keyboard=True)
+                    )
+            return 'FILTER_THE_ORDERS'
+        else:
+            context.bot.send_message(
+                        chat_id = chat_id,
+                        text = 'Я вас не понимаю.\n'
+                                'Пожалуйста, выберите статус из списка ниже.',
+                        reply_markup = ReplyKeyboardMarkup(user_orders_keyboard, resize_keyboard=True, one_time_keyboard=True)
+                    )
+            return 'FILTER_THE_ORDERS'
+
+
+    
+def create_order_text_for_user(order):
+    text = ''
+    for key,value in order.items():
+        if order[key] != None: 
+            text += f'{key}: {value}\n'
+    return text
+
+
+def create_keyboard_for_user_order(order):
+    order_status = order['Статус заказа']
+    orders_user_new_keyboard = [order_status]
+    return orders_user_new_keyboard
 
 
 def parameter_1(update: Update, context: CallbackContext):
@@ -355,6 +404,7 @@ def parameter_6(update: Update, context: CallbackContext):
     return 'PARAMETR_7'
 
 
+
 def parameter_7(update: Update, context: CallbackContext):
     user_input = update.effective_message.text
     user_id = update.message.from_user.id
@@ -448,6 +498,7 @@ def parameter_8(update:Update, context:CallbackContext):
         reply_markup=ReplyKeyboardMarkup(date_keyboard, resize_keyboard=True, one_time_keyboard=True)
     )
     return 'PARAMETR_9'
+
 
 
 def parameter_9(update:Update, context:CallbackContext):
@@ -550,14 +601,15 @@ def to_order(update: Update, context: CallbackContext):
             total_price += price.get(i)
         except:
             pass
+
     if 'Надпись' in order:
         total_price += 500
     if order['Срочно'] == 'Да':
         total_price = int(total_price * 1.2)
     if order['Промокод'] in promocodes:
         total_price = int(total_price * 0.8)
+
     order.update({'Стоимость': total_price})
-    update.message.reply_text('Стоимость торта составит {} рублей'.format(total_price))
 
     context.user_data['order'] = order
 
@@ -589,7 +641,6 @@ def check_to_order(update: Update, context: CallbackContext):
 
     if str(user_id) in latest_orders:
         orders = latest_orders[str(user_id)]
-        orders = latest_orders[str(user_id)]
         del json_orders[str(user_id)]
         orders.append(order)
         json_orders[user_id] = orders
@@ -607,11 +658,20 @@ def check_to_order(update: Update, context: CallbackContext):
         )
         return 'MAIN_MENU'
 
+    elif user_message == 'Собрать заново':
+        order = {'Статус заказа':'Заявка обрабатывается'}
+        update.message.reply_text(
+            'Вы перенаправлены в Главное меню для повторного сбора торта',
+            reply_markup=ReplyKeyboardMarkup(main_keyboard, resize_keyboard=True, one_time_keyboard=True)
+        )
+        return 'MAIN_MENU'
+
 
 def handle_user_reply(update: Update, context: CallbackContext):
     with open('users_contacts.json', 'r', encoding='utf-8') as file:
         users_json_dict = json.load(file)
         json_contacts.update(users_json_dict)
+
     if update.message:
         user_reply = update.message.text
         chat_id = update.message.chat_id
@@ -649,6 +709,7 @@ def handle_user_reply(update: Update, context: CallbackContext):
         'PARAMETR_9': parameter_9,
         'TO_ORDER': to_order,
         'CHECK_TO_ORDER': check_to_order,
+        'FILTER_THE_ORDERS': get_filtered_oreders,
     }
 
     state_handler = states_functions[user_state]
