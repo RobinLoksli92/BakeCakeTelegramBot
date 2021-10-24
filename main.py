@@ -548,7 +548,6 @@ def to_order(update: Update, context: CallbackContext):
     for i in order.values():
         try:
             total_price += price.get(i)
-            print(i, total_price)
         except:
             pass
     if 'Надпись' in order:
