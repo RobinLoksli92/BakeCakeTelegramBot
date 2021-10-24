@@ -17,7 +17,7 @@ states_database = {}
 users_pd = {}
 json_contacts = {}
 order = {'Статус заказа': 'Заявка обрабатывается'}
-promocodes = ['Торт']
+promocodes = ['ТОРТ']
 price = {
     '1 уровень': 400,
     '2 уровня': 750,
@@ -366,6 +366,12 @@ def parameter_9(update:Update, context:CallbackContext):
 
 
 def to_order(update: Update, context: CallbackContext):
+    user_input = update.effective_message.text
+    if user_input != 'Пропустить' and user_input not in promocodes:
+        update.message.reply_text('Неверный промокод. Повторите ввод или пропустите шаг',
+                                  reply_markup=ReplyKeyboardMarkup(pass_keyboard, resize_keyboard=True,
+                                                                   one_time_keyboard=True))
+        return 'TO_ORDER'
     order.update(
         {
             'Количество уровней': context.user_data.get('Количество уровней'),
@@ -379,10 +385,9 @@ def to_order(update: Update, context: CallbackContext):
             'Время доставки': context.user_data.get('Время доставки'),
             'Комментарий к заказу': context.user_data.get('Комментарий к заказу'),
             'Срочно': context.user_data.get('Срочно'),
+            'Промокод': user_input
         }
     )
-    user_input = update.effective_message.text
-    order.update({'Промокод': user_input})
     update.message.reply_text('Заказать торт?',
                               reply_markup=ReplyKeyboardMarkup(to_order_keyboard, resize_keyboard=True,
                                                                one_time_keyboard=True))
@@ -398,7 +403,7 @@ def to_order(update: Update, context: CallbackContext):
     if order['Срочно'] == 'Да':
         total_price = int(total_price * 1.2)
     if order['Промокод'] in promocodes:
-        total_price = int(total_price * 0.9)
+        total_price = int(total_price * 0.8)
     order.update({'Стоимость': total_price})
     update.message.reply_text('Стоимость торта составит {} рублей'.format(total_price))
     return 'CHECK_TO_ORDER'
