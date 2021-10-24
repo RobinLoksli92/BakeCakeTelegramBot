@@ -559,11 +559,14 @@ def to_order(update: Update, context: CallbackContext):
         total_price = int(total_price * 0.8)
     order.update({'Стоимость': total_price})
     update.message.reply_text('Стоимость торта составит {} рублей'.format(total_price))
+
+    context.user_data['order'] = order
+
     return 'CHECK_TO_ORDER'
 
 
 def check_to_order(update: Update, context: CallbackContext):
-    global order
+    order = context.user_data.get('order')
     user_message = update.message.text
     user_id = update.message.from_user.id
 
