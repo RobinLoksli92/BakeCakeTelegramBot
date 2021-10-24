@@ -53,19 +53,19 @@ phone_number_keyboard = [
 address_keyboard = [
     [KeyboardButton('Отправить адрес', request_location=True)]
 ]
-ok_keyboard = [['Выбрать по умолчанию']]
-pass_keyboard = [['Пропустить']]
-date_keyboard = [['В ближайшее время']]
+ok_keyboard = [['Выбрать по умолчанию'], ['НАЗАД', 'ГЛАВНОЕ МЕНЮ']]
+pass_keyboard = [['Пропустить'], ['НАЗАД', 'ГЛАВНОЕ МЕНЮ']]
+date_keyboard = [['В ближайшее время'], ['НАЗАД', 'ГЛАВНОЕ МЕНЮ']]
 main_keyboard = [
     [KeyboardButton('Собрать торт'), KeyboardButton('Заказы')]
 ]
-parametr_1_keyboard = [['1 уровень', '2 уровня', '3 уровня']]
-parametr_2_keyboard = [['Квадрат', 'Круг', 'Прямоугольник']]
+parametr_1_keyboard = [['1 уровень', '2 уровня', '3 уровня'], ['ГЛАВНОЕ МЕНЮ']]
+parametr_2_keyboard = [['Квадрат', 'Круг', 'Прямоугольник'], ['НАЗАД', 'ГЛАВНОЕ МЕНЮ']]
 parametr_3_keyboard = [['Без топпинга', 'Белый соус', 'Карамельный сироп'], ['Кленовый сироп', 'Клубничный сироп'],
-                       ['Черничный сироп', 'Молочный шоколад']]
-parametr_4_keyboard = [['Ежевика', 'Малина', 'Голубика', 'Клубника'], ['Пропустить']]
-parametr_5_keyboard = [['Фисташки', 'Безе', 'Фундук', 'Пекан'], ['Маршмеллоу', 'Фундук', 'Марципан', 'Пропустить']]
-to_order_keyboard = [['Заказать торт', 'Собрать заново']]
+                       ['Черничный сироп', 'Молочный шоколад'], ['НАЗАД', 'ГЛАВНОЕ МЕНЮ']]
+parametr_4_keyboard = [['Ежевика', 'Малина', 'Голубика'], ['Клубника', 'Пропустить'], ['НАЗАД', 'ГЛАВНОЕ МЕНЮ']]
+parametr_5_keyboard = [['Фисташки', 'Безе', 'Пекан'], ['Маршмеллоу', 'Фундук', 'Марципан'], ['Пропустить'], ['НАЗАД', 'ГЛАВНОЕ МЕНЮ']]
+to_order_keyboard = [['Заказать торт'], ['НАЗАД', 'ГЛАВНОЕ МЕНЮ']]
 
 
 def start(update: Update, context: CallbackContext):
@@ -225,9 +225,16 @@ def main_menu(update: Update, context: CallbackContext):
 
 
 def parameter_1(update: Update, context: CallbackContext):
-    user = update.message.from_user
     user_input = update.effective_message.text
     context.user_data['Количество уровней'] = user_input
+
+    if user_input == 'ГЛАВНОЕ МЕНЮ':
+        update.message.reply_text(
+            'Собрать новый торт или посмотреть заказы?',
+            reply_markup=ReplyKeyboardMarkup(main_keyboard, resize_keyboard=True, one_time_keyboard=True)
+        )
+        return 'MAIN_MENU'
+
     update.message.reply_text('Форма',
                               reply_markup=ReplyKeyboardMarkup(parametr_2_keyboard, resize_keyboard=True,
                                                                one_time_keyboard=True))
@@ -237,6 +244,19 @@ def parameter_1(update: Update, context: CallbackContext):
 def parameter_2(update: Update, context: CallbackContext):
     user_input = update.effective_message.text
     context.user_data['Форма'] = user_input
+
+    if user_input == 'ГЛАВНОЕ МЕНЮ':
+        update.message.reply_text(
+            'Собрать новый торт или посмотреть заказы?',
+            reply_markup=ReplyKeyboardMarkup(main_keyboard, resize_keyboard=True, one_time_keyboard=True)
+        )
+        return 'MAIN_MENU'
+    if user_input == 'НАЗАД':
+        update.message.reply_text('Количество уровней',
+                                  reply_markup=ReplyKeyboardMarkup(parametr_1_keyboard, resize_keyboard=True,
+                                                                   one_time_keyboard=True))
+        return 'PARAMETR_1'
+
     update.message.reply_text('Топпинг',
                               reply_markup=ReplyKeyboardMarkup(parametr_3_keyboard, resize_keyboard=True,
                                                                one_time_keyboard=True))
@@ -246,6 +266,19 @@ def parameter_2(update: Update, context: CallbackContext):
 def parameter_3(update: Update, context: CallbackContext):
     user_input = update.effective_message.text
     context.user_data['Топпинг'] = user_input
+
+    if user_input == 'ГЛАВНОЕ МЕНЮ':
+        update.message.reply_text(
+            'Собрать новый торт или посмотреть заказы?',
+            reply_markup=ReplyKeyboardMarkup(main_keyboard, resize_keyboard=True, one_time_keyboard=True)
+        )
+        return 'MAIN_MENU'
+    if user_input == 'НАЗАД':
+        update.message.reply_text('Форма',
+                                  reply_markup=ReplyKeyboardMarkup(parametr_2_keyboard, resize_keyboard=True,
+                                                                   one_time_keyboard=True))
+        return 'PARAMETR_2'
+
     update.message.reply_text('Ягоды',
                               reply_markup=ReplyKeyboardMarkup(parametr_4_keyboard, resize_keyboard=True,
                                                                one_time_keyboard=True))
@@ -254,6 +287,19 @@ def parameter_3(update: Update, context: CallbackContext):
 
 def parameter_4(update: Update, context: CallbackContext):
     user_input = update.effective_message.text
+
+    if user_input == 'ГЛАВНОЕ МЕНЮ':
+        update.message.reply_text(
+            'Собрать новый торт или посмотреть заказы?',
+            reply_markup=ReplyKeyboardMarkup(main_keyboard, resize_keyboard=True, one_time_keyboard=True)
+        )
+        return 'MAIN_MENU'
+    if user_input == 'НАЗАД':
+        update.message.reply_text('Топпинг',
+                                  reply_markup=ReplyKeyboardMarkup(parametr_3_keyboard, resize_keyboard=True,
+                                                                   one_time_keyboard=True))
+        return 'PARAMETR_3'
+
     if user_input != 'Пропустить':
         context.user_data['Ягоды'] = user_input
     update.message.reply_text('Декор',
@@ -264,6 +310,19 @@ def parameter_4(update: Update, context: CallbackContext):
 
 def parameter_5(update: Update, context: CallbackContext):
     user_input = update.effective_message.text
+
+    if user_input == 'ГЛАВНОЕ МЕНЮ':
+        update.message.reply_text(
+            'Собрать новый торт или посмотреть заказы?',
+            reply_markup=ReplyKeyboardMarkup(main_keyboard, resize_keyboard=True, one_time_keyboard=True)
+        )
+        return 'MAIN_MENU'
+    if user_input == 'НАЗАД':
+        update.message.reply_text('Ягоды',
+                                  reply_markup=ReplyKeyboardMarkup(parametr_4_keyboard, resize_keyboard=True,
+                                                                   one_time_keyboard=True))
+        return 'PARAMETR_4'
+
     if user_input != 'Пропустить':
         context.user_data['Декор'] = user_input
     update.message.reply_text('Мы можем разместить на торте любую надпись, '
@@ -275,6 +334,19 @@ def parameter_5(update: Update, context: CallbackContext):
 
 def parameter_6(update: Update, context: CallbackContext):
     user_input = update.effective_message.text
+
+    if user_input == 'ГЛАВНОЕ МЕНЮ':
+        update.message.reply_text(
+            'Собрать новый торт или посмотреть заказы?',
+            reply_markup=ReplyKeyboardMarkup(main_keyboard, resize_keyboard=True, one_time_keyboard=True)
+        )
+        return 'MAIN_MENU'
+    if user_input == 'НАЗАД':
+        update.message.reply_text('Декор',
+                                  reply_markup=ReplyKeyboardMarkup(parametr_5_keyboard, resize_keyboard=True,
+                                                                   one_time_keyboard=True))
+        return 'PARAMETR_5'
+
     if user_input != 'Пропустить':
         context.user_data['Надпись'] = user_input
     update.message.reply_text('Комментарий к заказу',
@@ -286,6 +358,20 @@ def parameter_6(update: Update, context: CallbackContext):
 def parameter_7(update: Update, context: CallbackContext):
     user_input = update.effective_message.text
     user_id = update.message.from_user.id
+
+    if user_input == 'ГЛАВНОЕ МЕНЮ':
+        update.message.reply_text(
+            'Собрать новый торт или посмотреть заказы?',
+            reply_markup=ReplyKeyboardMarkup(main_keyboard, resize_keyboard=True, one_time_keyboard=True)
+        )
+        return 'MAIN_MENU'
+    if user_input == 'НАЗАД':
+        update.message.reply_text('Мы можем разместить на торте любую надпись, '
+                                  '\nнапример: «С днем рождения! Введите надпись.',
+                                  reply_markup=ReplyKeyboardMarkup(pass_keyboard, resize_keyboard=True,
+                                                                   one_time_keyboard=True))
+        return 'PARAMETR_6'
+
     if user_input != 'Пропустить':
         context.user_data['Комментарий к заказу'] = user_input
     with open("users_contacts.json", 'r', encoding='utf-8') as read_file:
@@ -303,6 +389,19 @@ def parameter_7(update: Update, context: CallbackContext):
 
 def parametr_7_1(update: Update, context: CallbackContext):
     user_input = update.effective_message.text
+
+    if user_input == 'ГЛАВНОЕ МЕНЮ':
+        update.message.reply_text(
+            'Собрать новый торт или посмотреть заказы?',
+            reply_markup=ReplyKeyboardMarkup(main_keyboard, resize_keyboard=True, one_time_keyboard=True)
+        )
+        return 'MAIN_MENU'
+    if user_input == 'НАЗАД':
+        update.message.reply_text('Комментарий к заказу',
+                                  reply_markup=ReplyKeyboardMarkup(pass_keyboard, resize_keyboard=True,
+                                                                   one_time_keyboard=True))
+        return 'PARAMETR_7'
+
     user_id = update.message.from_user.id
     if user_input != 'Выбрать по умолчанию':
         context.user_data['Получатель'] = user_input
@@ -321,10 +420,30 @@ def parametr_7_1(update: Update, context: CallbackContext):
 
 def parameter_8(update:Update, context:CallbackContext):
     user_input = update.effective_message.text
+    user_id = update.message.from_user.id
+
+    if user_input == 'ГЛАВНОЕ МЕНЮ':
+        update.message.reply_text(
+            'Собрать новый торт или посмотреть заказы?',
+            reply_markup=ReplyKeyboardMarkup(main_keyboard, resize_keyboard=True, one_time_keyboard=True)
+        )
+        return 'MAIN_MENU'
+    if user_input == 'НАЗАД':
+        with open("users_contacts.json", 'r', encoding='utf-8') as read_file:
+            data = json.load(read_file)[str(user_id)]
+            contact = '{} {} {}'.format(data['Имя'], data['Фамилия'], data['Номер телефона'])
+            context.user_data['Получатель'] = contact
+        update.message.reply_text(
+            text=f'Контакты по умолчанию: {contact}\n'
+                 'Выберите контакты по умолчанию или введите новые в формате: имя фамилия, номер телефона',
+            reply_markup=ReplyKeyboardMarkup(ok_keyboard, resize_keyboard=True, one_time_keyboard=True)
+        )
+        return 'PARAMETR_7_1'
+
     if user_input != 'Выбрать по умолчанию':
         context.user_data['Адрес'] = user_input
     update.message.reply_text(
-        'Введите время доставки в формате "DD.MM.YYYY HH-MM" (например: 24.10.2021 18-30) или нажмите кнопку. '
+        'Введите время доставки в формате "DD.MM.YYYY HH-MM" (например: 24.10.2021 18-30) или нажмите "В ближайшее время". '
         '\n Стоимость будет увеличена на 20% при доставке менее чем за 24 часа',
         reply_markup=ReplyKeyboardMarkup(date_keyboard, resize_keyboard=True, one_time_keyboard=True)
     )
@@ -333,6 +452,25 @@ def parameter_8(update:Update, context:CallbackContext):
 
 def parameter_9(update:Update, context:CallbackContext):
     user_input = update.effective_message.text
+    user_id = update.message.from_user.id
+
+    if user_input == 'ГЛАВНОЕ МЕНЮ':
+        update.message.reply_text(
+            'Собрать новый торт или посмотреть заказы?',
+            reply_markup=ReplyKeyboardMarkup(main_keyboard, resize_keyboard=True, one_time_keyboard=True)
+        )
+        return 'MAIN_MENU'
+    if user_input == 'НАЗАД':
+        with open("users_contacts.json", 'r', encoding='utf-8') as read_file:
+            data = json.load(read_file)[str(user_id)]
+            address = data['Адрес']
+            context.user_data['Адрес'] = address
+        update.message.reply_text(f'Адрес по умолчанию: {address}\n'
+                                  'Выберите адрес по умолчанию или введите другой',
+                                  reply_markup=ReplyKeyboardMarkup(ok_keyboard, resize_keyboard=True,
+                                                                   one_time_keyboard=True)
+                                  )
+        return 'PARAMETR_8'
 
     if user_input == 'В ближайшее время':
         context.user_data['Время доставки'] = user_input
@@ -350,7 +488,7 @@ def parameter_9(update:Update, context:CallbackContext):
             context.user_data['Срочно'] = 'Да'
         if time_of_delivery < datetime.now():
             update.message.reply_text(
-                'Невозможно установить на прошедшее время. Введите заново или нажмите кнопку.',
+                'Невозможно установить на прошедшее время. Введите заново или или нажмите "В ближайшее время".',
                 reply_markup=ReplyKeyboardMarkup(date_keyboard, resize_keyboard=True, one_time_keyboard=True))
             return 'PARAMETR_9'
         update.message.reply_text('Введите промокод',
@@ -360,13 +498,28 @@ def parameter_9(update:Update, context:CallbackContext):
     except ValueError:
         update.message.reply_text(
             'Некорректное время. Введите время доставки в формате "DD.MM.YYYY HH-MM" '
-            '(например: 24.10.2021 18-30) или нажмите кнопку.',
+            '(например: 24.10.2021 18-30) или нажмите "В ближайшее время".',
             reply_markup=ReplyKeyboardMarkup(date_keyboard, resize_keyboard=True, one_time_keyboard=True))
         return 'PARAMETR_9'
 
 
 def to_order(update: Update, context: CallbackContext):
     user_input = update.effective_message.text
+
+    if user_input == 'ГЛАВНОЕ МЕНЮ':
+        update.message.reply_text(
+            'Собрать новый торт или посмотреть заказы?',
+            reply_markup=ReplyKeyboardMarkup(main_keyboard, resize_keyboard=True, one_time_keyboard=True)
+        )
+        return 'MAIN_MENU'
+    if user_input == 'НАЗАД':
+        update.message.reply_text(
+            'Введите время доставки в формате "DD.MM.YYYY HH-MM" (например: 24.10.2021 18-30) или нажмите "В ближайшее время". '
+            '\n Стоимость будет увеличена на 20% при доставке менее чем за 24 часа',
+            reply_markup=ReplyKeyboardMarkup(date_keyboard, resize_keyboard=True, one_time_keyboard=True)
+        )
+        return 'PARAMETR_9'
+
     if user_input != 'Пропустить' and user_input not in promocodes:
         update.message.reply_text('Неверный промокод. Повторите ввод или пропустите шаг',
                                   reply_markup=ReplyKeyboardMarkup(pass_keyboard, resize_keyboard=True,
@@ -413,6 +566,19 @@ def check_to_order(update: Update, context: CallbackContext):
     global order
     user_message = update.message.text
     user_id = update.message.from_user.id
+
+    if user_message == 'ГЛАВНОЕ МЕНЮ':
+        update.message.reply_text(
+            'Собрать новый торт или посмотреть заказы?',
+            reply_markup=ReplyKeyboardMarkup(main_keyboard, resize_keyboard=True, one_time_keyboard=True)
+        )
+        return 'MAIN_MENU'
+    if user_message == 'НАЗАД':
+        update.message.reply_text('Введите промокод',
+                                  reply_markup=ReplyKeyboardMarkup(pass_keyboard, resize_keyboard=True,
+                                                                   one_time_keyboard=True))
+        return 'TO_ORDER'
+
     orders = []
     json_orders = {}
     with open('orders.json', 'r', encoding='utf-8') as file:
@@ -435,13 +601,6 @@ def check_to_order(update: Update, context: CallbackContext):
             json.dump(json_orders, file, ensure_ascii=False)
         update.message.reply_text(
             'Торт заказан!',
-            reply_markup=ReplyKeyboardMarkup(main_keyboard, resize_keyboard=True, one_time_keyboard=True)
-        )
-        return 'MAIN_MENU'
-    elif user_message == 'Собрать заново':
-        order = {'Статус заказа': 'Заявка обрабатывается'}
-        update.message.reply_text(
-            'Вы перенаправлены в Главное меню для повторного сбора торта',
             reply_markup=ReplyKeyboardMarkup(main_keyboard, resize_keyboard=True, one_time_keyboard=True)
         )
         return 'MAIN_MENU'
