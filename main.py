@@ -227,8 +227,7 @@ def main_menu(update: Update, context: CallbackContext):
 def parameter_1(update: Update, context: CallbackContext):
     user = update.message.from_user
     user_input = update.effective_message.text
-    order.update({'Номер заказа': user.id})
-    order.update({'Количество уровней': user_input})
+    context.user_data['Количество уровней'] = user_input
     update.message.reply_text('Форма',
                               reply_markup=ReplyKeyboardMarkup(parametr_2_keyboard, resize_keyboard=True,
                                                                one_time_keyboard=True))
@@ -237,8 +236,7 @@ def parameter_1(update: Update, context: CallbackContext):
 
 def parameter_2(update: Update, context: CallbackContext):
     user_input = update.effective_message.text
-    order.update({'Форма': user_input})
-    user_input = update.effective_message.text
+    context.user_data['Форма'] = user_input
     update.message.reply_text('Топпинг',
                               reply_markup=ReplyKeyboardMarkup(parametr_3_keyboard, resize_keyboard=True,
                                                                one_time_keyboard=True))
@@ -247,7 +245,7 @@ def parameter_2(update: Update, context: CallbackContext):
 
 def parameter_3(update: Update, context: CallbackContext):
     user_input = update.effective_message.text
-    order.update({'Топпинг': user_input})
+    context.user_data['Топпинг'] = user_input
     update.message.reply_text('Ягоды',
                               reply_markup=ReplyKeyboardMarkup(parametr_4_keyboard, resize_keyboard=True,
                                                                one_time_keyboard=True))
@@ -257,7 +255,7 @@ def parameter_3(update: Update, context: CallbackContext):
 def parameter_4(update: Update, context: CallbackContext):
     user_input = update.effective_message.text
     if user_input != 'Пропустить':
-        order.update({'Ягоды': user_input})
+        context.user_data['Ягоды'] = user_input
     update.message.reply_text('Декор',
                               reply_markup=ReplyKeyboardMarkup(parametr_5_keyboard, resize_keyboard=True,
                                                                one_time_keyboard=True))
@@ -267,7 +265,7 @@ def parameter_4(update: Update, context: CallbackContext):
 def parameter_5(update: Update, context: CallbackContext):
     user_input = update.effective_message.text
     if user_input != 'Пропустить':
-        order.update({'Декор': user_input})
+        context.user_data['Декор'] = user_input
     update.message.reply_text('Мы можем разместить на торте любую надпись, '
                               '\nнапример: «С днем рождения! Введите надпись.',
                               reply_markup=ReplyKeyboardMarkup(pass_keyboard, resize_keyboard=True,
@@ -278,7 +276,7 @@ def parameter_5(update: Update, context: CallbackContext):
 def parameter_6(update: Update, context: CallbackContext):
     user_input = update.effective_message.text
     if user_input != 'Пропустить':
-        order.update({'Надпись': user_input})
+        context.user_data['Надпись'] = user_input
     update.message.reply_text('Комментарий к заказу',
                               reply_markup=ReplyKeyboardMarkup(pass_keyboard, resize_keyboard=True,
                                                                one_time_keyboard=True))
@@ -289,11 +287,11 @@ def parameter_7(update: Update, context: CallbackContext):
     user_input = update.effective_message.text
     user_id = update.message.from_user.id
     if user_input != 'Пропустить':
-        order.update({'Комментарий к заказу': user_input})
+        context.user_data['Комментарий к заказу'] = user_input
     with open("users_contacts.json", 'r', encoding='utf-8') as read_file:
         data = json.load(read_file)[str(user_id)]
         contact = '{} {} {}'.format(data['Имя'], data['Фамилия'], data['Номер телефона'])
-        order.update({'Получатель': contact})
+        context.user_data['Получатель'] = contact
     update.message.reply_text(
         text=f'Контакты по умолчанию: {contact}\n'
              'Выберите контакты по умолчанию или введите новые в формате: имя фамилия, номер телефона',
@@ -307,12 +305,12 @@ def parametr_7_1(update: Update, context: CallbackContext):
     user_input = update.effective_message.text
     user_id = update.message.from_user.id
     if user_input != 'Выбрать по умолчанию':
-        order.update({'Получатель': user_input})
+        context.user_data['Получатель'] = user_input
 
     with open("users_contacts.json", 'r', encoding='utf-8') as read_file:
         data = json.load(read_file)[str(user_id)]
         address = data['Адрес']
-        order.update({'Адрес': address})
+        context.user_data['Адрес'] = address
     update.message.reply_text(f'Адрес по умолчанию: {address}\n'
                               'Выберите адрес по умолчанию или введите другой',
                               reply_markup=ReplyKeyboardMarkup(ok_keyboard, resize_keyboard=True,
@@ -324,7 +322,7 @@ def parametr_7_1(update: Update, context: CallbackContext):
 def parameter_8(update:Update, context:CallbackContext):
     user_input = update.effective_message.text
     if user_input != 'Выбрать по умолчанию':
-        order.update({'Адрес': user_input})
+        context.user_data['Адрес'] = user_input
     update.message.reply_text(
         'Введите время доставки в формате "DD.MM.YYYY HH-MM" (например: 24.10.2021 18-30) или нажмите кнопку. '
         '\n Стоимость будет увеличена на 20% при доставке менее чем за 24 часа',
@@ -337,7 +335,8 @@ def parameter_9(update:Update, context:CallbackContext):
     user_input = update.effective_message.text
 
     if user_input == 'В ближайшее время':
-        order.update({'Время доставки': 'В ближайшее время', 'Срочно': 'Да'})
+        context.user_data['Время доставки'] = user_input
+        context.user_data['Срочно'] = 'Да'
         update.message.reply_text('Введите промокод',
                                   reply_markup=ReplyKeyboardMarkup(pass_keyboard, resize_keyboard=True,
                                                                    one_time_keyboard=True))
@@ -345,9 +344,10 @@ def parameter_9(update:Update, context:CallbackContext):
 
     try:
         time_of_delivery = datetime.strptime(user_input, "%d.%m.%Y %H-%M")
-        order.update({'Время доставки': str(time_of_delivery)})
+        context.user_data['Время доставки'] = str(time_of_delivery)
+
         if time_of_delivery < datetime.now() + timedelta(hours=24):
-            order.update({'Срочно': 'Да'})
+            context.user_data['Срочно'] = 'Да'
         if time_of_delivery < datetime.now():
             update.message.reply_text(
                 'Невозможно установить на прошедшее время. Введите заново или нажмите кнопку.',
@@ -366,6 +366,21 @@ def parameter_9(update:Update, context:CallbackContext):
 
 
 def to_order(update: Update, context: CallbackContext):
+    order.update(
+        {
+            'Количество уровней': context.user_data.get('Количество уровней'),
+            'Форма': context.user_data.get('Форма'),
+            'Топпинг': context.user_data.get('Топпинг'),
+            'Ягоды': context.user_data.get('Ягоды'),
+            'Декор': context.user_data.get('Декор'),
+            'Надпись': context.user_data.get('Надпись'),
+            'Получатель': context.user_data.get('Получатель'),
+            'Адрес': context.user_data.get('Адрес'),
+            'Время доставки': context.user_data.get('Время доставки'),
+            'Комментарий к заказу': context.user_data.get('Комментарий к заказу'),
+            'Срочно': context.user_data.get('Срочно'),
+        }
+    )
     user_input = update.effective_message.text
     order.update({'Промокод': user_input})
     update.message.reply_text('Заказать торт?',
