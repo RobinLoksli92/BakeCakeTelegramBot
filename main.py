@@ -2,7 +2,6 @@ from dotenv import load_dotenv
 import os
 import telegram
 from telegram import Update
-from telegram import replymarkup
 from telegram.ext import Filters
 from telegram.ext import CallbackContext
 from telegram.ext import Updater
@@ -234,7 +233,7 @@ def get_filtered_oreders(update:Update, context:CallbackContext):
         if user_reply == 'Главное меню':
             context.bot.send_message(
                     chat_id = chat_id,
-                    text = 'Главное меню',
+                    text = 'Возврат в главное меню',
                     reply_markup = ReplyKeyboardMarkup(main_keyboard, resize_keyboard=True, one_time_keyboard=True)
                 ) 
             return 'MAIN_MENU'
@@ -256,7 +255,6 @@ def get_filtered_oreders(update:Update, context:CallbackContext):
                         reply_markup = ReplyKeyboardMarkup(user_orders_keyboard, resize_keyboard=True, one_time_keyboard=True)
                     )
             return 'FILTER_THE_ORDERS'
-
 
     
 def create_order_text_for_user(order):
@@ -539,7 +537,7 @@ def parameter_9(update:Update, context:CallbackContext):
             context.user_data['Срочно'] = 'Да'
         if time_of_delivery < datetime.now():
             update.message.reply_text(
-                'Невозможно установить на прошедшее время. Введите заново или или нажмите "В ближайшее время".',
+                'Невозможно установить на прошедшее время. Введите заново или нажмите "В ближайшее время".',
                 reply_markup=ReplyKeyboardMarkup(date_keyboard, resize_keyboard=True, one_time_keyboard=True))
             return 'PARAMETR_9'
         update.message.reply_text('Введите промокод',
@@ -620,19 +618,6 @@ def check_to_order(update: Update, context: CallbackContext):
     order = context.user_data.get('order')
     user_message = update.message.text
     user_id = update.message.from_user.id
-
-    if user_message == 'ГЛАВНОЕ МЕНЮ':
-        update.message.reply_text(
-            'Собрать новый торт или посмотреть заказы?',
-            reply_markup=ReplyKeyboardMarkup(main_keyboard, resize_keyboard=True, one_time_keyboard=True)
-        )
-        return 'MAIN_MENU'
-    if user_message == 'НАЗАД':
-        update.message.reply_text('Введите промокод',
-                                  reply_markup=ReplyKeyboardMarkup(pass_keyboard, resize_keyboard=True,
-                                                                   one_time_keyboard=True))
-        return 'TO_ORDER'
-
     orders = []
     json_orders = {}
     with open('orders.json', 'r', encoding='utf-8') as file:
@@ -648,6 +633,19 @@ def check_to_order(update: Update, context: CallbackContext):
         json_orders.update(latest_orders)
         orders.append(order)
         json_orders.update({user_id: orders})
+
+    if user_message == 'ГЛАВНОЕ МЕНЮ':
+        update.message.reply_text(
+            'Собрать новый торт или посмотреть заказы?',
+            reply_markup=ReplyKeyboardMarkup(main_keyboard, resize_keyboard=True, one_time_keyboard=True)
+        )
+        return 'MAIN_MENU'
+
+    if user_message == 'НАЗАД':
+        update.message.reply_text('Введите промокод',
+                                  reply_markup=ReplyKeyboardMarkup(pass_keyboard, resize_keyboard=True,
+                                                                   one_time_keyboard=True))
+        return 'TO_ORDER'
 
     if user_message == 'Заказать торт':
         with open('orders.json', 'w', encoding='utf-8') as file:
