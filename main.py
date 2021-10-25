@@ -587,9 +587,11 @@ def to_order(update: Update, context: CallbackContext):
             'Время доставки': context.user_data.get('Время доставки'),
             'Комментарий к заказу': context.user_data.get('Комментарий к заказу'),
             'Срочно': context.user_data.get('Срочно'),
-            'Промокод': user_input
         }
     )
+    if user_input != 'Пропустить':
+        order.update({'Промокод': user_input})
+
     total_price = 0
     for i in order.values():
         try:
@@ -601,8 +603,11 @@ def to_order(update: Update, context: CallbackContext):
         total_price += 500
     if order['Срочно'] == 'Да':
         total_price = int(total_price * 1.2)
-    if order['Промокод'] in promocodes:
-        total_price = int(total_price * 0.8)
+    try:
+        if order['Промокод'] in promocodes:
+            total_price = int(total_price * 0.8)
+    except:
+        pass
 
     order.update({'Стоимость': total_price})
 
