@@ -271,10 +271,31 @@ def create_keyboard_for_user_order(order):
     return orders_user_new_keyboard
 
 
+def check_correct_input(context, update, user_input, keyboard):
+    user_input_is_correct = False
+    for button in keyboard:
+        if user_input in button:
+            user_input_is_correct = True
+    if not user_input_is_correct:
+        chat_id = update.effective_message.chat_id
+        context.bot.send_message(
+            chat_id=chat_id,
+            text='Я вас не понимаю 😔\nПожалуйста, воспользуйтесь кнопками в нижнем меню. '
+                 '\nЕсли у вас они не отображаются, просто нажмите на эту кнопку в поле ввода.',
+        )
+        context.bot.send_photo(chat_id=chat_id, photo=open('Отбивка.jpeg', 'rb'))
+        return False
+    return True
+
+
 def parameter_1(update: Update, context: CallbackContext):
     user_input = update.effective_message.text
     context.user_data['Количество уровней'] = user_input
-
+    if not check_correct_input(context, update, user_input, parametr_1_keyboard):
+        update.message.reply_text('Повторите ввод',
+                                  reply_markup=ReplyKeyboardMarkup(parametr_1_keyboard, resize_keyboard=True,
+                                                                   one_time_keyboard=True))
+        return 'PARAMETR_1'
     if user_input == 'ГЛАВНОЕ МЕНЮ':
         update.message.reply_text(
             'Собрать новый торт или посмотреть заказы?',
@@ -291,6 +312,12 @@ def parameter_1(update: Update, context: CallbackContext):
 def parameter_2(update: Update, context: CallbackContext):
     user_input = update.effective_message.text
     context.user_data['Форма'] = user_input
+
+    if not check_correct_input(context, update, user_input, parametr_2_keyboard):
+        update.message.reply_text('Повторите ввод',
+                                  reply_markup=ReplyKeyboardMarkup(parametr_2_keyboard, resize_keyboard=True,
+                                                                   one_time_keyboard=True))
+        return 'PARAMETR_2'
 
     if user_input == 'ГЛАВНОЕ МЕНЮ':
         update.message.reply_text(
@@ -314,6 +341,12 @@ def parameter_3(update: Update, context: CallbackContext):
     user_input = update.effective_message.text
     context.user_data['Топпинг'] = user_input
 
+    if not check_correct_input(context, update, user_input, parametr_3_keyboard):
+        update.message.reply_text('Повторите ввод',
+                                  reply_markup=ReplyKeyboardMarkup(parametr_3_keyboard, resize_keyboard=True,
+                                                                   one_time_keyboard=True))
+        return 'PARAMETR_3'
+
     if user_input == 'ГЛАВНОЕ МЕНЮ':
         update.message.reply_text(
             'Собрать новый торт или посмотреть заказы?',
@@ -334,6 +367,7 @@ def parameter_3(update: Update, context: CallbackContext):
 
 def parameter_4(update: Update, context: CallbackContext):
     user_input = update.effective_message.text
+    context.user_data.pop('Ягоды', None)
 
     if user_input == 'ГЛАВНОЕ МЕНЮ':
         update.message.reply_text(
@@ -348,7 +382,14 @@ def parameter_4(update: Update, context: CallbackContext):
         return 'PARAMETR_3'
 
     if user_input != 'Пропустить':
+        if not check_correct_input(context, update, user_input, parametr_4_keyboard):
+            update.message.reply_text('Повторите ввод',
+                                      reply_markup=ReplyKeyboardMarkup(parametr_4_keyboard, resize_keyboard=True,
+                                                                       one_time_keyboard=True))
+            return 'PARAMETR_4'
+
         context.user_data['Ягоды'] = user_input
+
     update.message.reply_text('Декор',
                               reply_markup=ReplyKeyboardMarkup(parametr_5_keyboard, resize_keyboard=True,
                                                                one_time_keyboard=True))
@@ -357,6 +398,7 @@ def parameter_4(update: Update, context: CallbackContext):
 
 def parameter_5(update: Update, context: CallbackContext):
     user_input = update.effective_message.text
+    context.user_data.pop('Декор', None)
 
     if user_input == 'ГЛАВНОЕ МЕНЮ':
         update.message.reply_text(
@@ -371,7 +413,14 @@ def parameter_5(update: Update, context: CallbackContext):
         return 'PARAMETR_4'
 
     if user_input != 'Пропустить':
+        if not check_correct_input(context, update, user_input, parametr_5_keyboard):
+            update.message.reply_text('Повторите ввод',
+                                      reply_markup=ReplyKeyboardMarkup(parametr_5_keyboard, resize_keyboard=True,
+                                                                       one_time_keyboard=True))
+            return 'PARAMETR_5'
+
         context.user_data['Декор'] = user_input
+
     update.message.reply_text('Мы можем разместить на торте любую надпись, '
                               '\nнапример: «С днем рождения! Введите надпись.',
                               reply_markup=ReplyKeyboardMarkup(pass_keyboard, resize_keyboard=True,
@@ -381,6 +430,7 @@ def parameter_5(update: Update, context: CallbackContext):
 
 def parameter_6(update: Update, context: CallbackContext):
     user_input = update.effective_message.text
+    context.user_data.pop('Надпись', None)
 
     if user_input == 'ГЛАВНОЕ МЕНЮ':
         update.message.reply_text(
@@ -406,6 +456,7 @@ def parameter_6(update: Update, context: CallbackContext):
 def parameter_7(update: Update, context: CallbackContext):
     user_input = update.effective_message.text
     user_id = update.message.from_user.id
+    context.user_data.pop('Комментарий к заказу', None)
 
     if user_input == 'ГЛАВНОЕ МЕНЮ':
         update.message.reply_text(
@@ -554,6 +605,7 @@ def parameter_9(update:Update, context:CallbackContext):
 
 def to_order(update: Update, context: CallbackContext):
     user_input = update.effective_message.text
+    context.user_data.pop('Промокод', None)
 
     if user_input == 'ГЛАВНОЕ МЕНЮ':
         update.message.reply_text(
@@ -574,6 +626,7 @@ def to_order(update: Update, context: CallbackContext):
                                   reply_markup=ReplyKeyboardMarkup(pass_keyboard, resize_keyboard=True,
                                                                    one_time_keyboard=True))
         return 'TO_ORDER'
+
     order.update(
         {
             'Количество уровней': context.user_data.get('Количество уровней'),
@@ -587,29 +640,33 @@ def to_order(update: Update, context: CallbackContext):
             'Время доставки': context.user_data.get('Время доставки'),
             'Комментарий к заказу': context.user_data.get('Комментарий к заказу'),
             'Срочно': context.user_data.get('Срочно'),
-            'Промокод': user_input
+            'Промокод': user_input,
         }
     )
-    update.message.reply_text('Заказать торт?',
-                              reply_markup=ReplyKeyboardMarkup(to_order_keyboard, resize_keyboard=True,
-                                                               one_time_keyboard=True))
+    if user_input == 'Пропустить':
+        order.update({'Промокод': 'Не применен'})
     total_price = 0
     for i in order.values():
         try:
             total_price += price.get(i)
         except:
             pass
-
-    if 'Надпись' in order:
+    if order['Надпись']:
         total_price += 500
     if order['Срочно'] == 'Да':
         total_price = int(total_price * 1.2)
-    if order['Промокод'] in promocodes:
-        total_price = int(total_price * 0.8)
-
+    try:
+        if order['Промокод'] in promocodes:
+            total_price = int(total_price * 0.8)
+    except:
+        pass
     order.update({'Стоимость': total_price})
 
     context.user_data['order'] = order
+
+    update.message.reply_text(f'Стоимость торта составит {total_price} руб. Заказать торт?',
+                              reply_markup=ReplyKeyboardMarkup(to_order_keyboard, resize_keyboard=True,
+                                                               one_time_keyboard=True))
 
     return 'CHECK_TO_ORDER'
 
