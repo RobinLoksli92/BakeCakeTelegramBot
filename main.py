@@ -590,9 +590,6 @@ def to_order(update: Update, context: CallbackContext):
             'Промокод': user_input
         }
     )
-    update.message.reply_text('Заказать торт?',
-                              reply_markup=ReplyKeyboardMarkup(to_order_keyboard, resize_keyboard=True,
-                                                               one_time_keyboard=True))
     total_price = 0
     for i in order.values():
         try:
@@ -610,6 +607,10 @@ def to_order(update: Update, context: CallbackContext):
     order.update({'Стоимость': total_price})
 
     context.user_data['order'] = order
+
+    update.message.reply_text(f'Стоимость торта составит {total_price} руб. Заказать торт?',
+                              reply_markup=ReplyKeyboardMarkup(to_order_keyboard, resize_keyboard=True,
+                                                               one_time_keyboard=True))
 
     return 'CHECK_TO_ORDER'
 
