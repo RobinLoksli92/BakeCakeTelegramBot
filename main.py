@@ -367,6 +367,7 @@ def parameter_3(update: Update, context: CallbackContext):
 
 def parameter_4(update: Update, context: CallbackContext):
     user_input = update.effective_message.text
+    context.user_data.pop('Ягоды', None)
 
     if user_input == 'ГЛАВНОЕ МЕНЮ':
         update.message.reply_text(
@@ -397,6 +398,7 @@ def parameter_4(update: Update, context: CallbackContext):
 
 def parameter_5(update: Update, context: CallbackContext):
     user_input = update.effective_message.text
+    context.user_data.pop('Декор', None)
 
     if user_input == 'ГЛАВНОЕ МЕНЮ':
         update.message.reply_text(
@@ -428,6 +430,7 @@ def parameter_5(update: Update, context: CallbackContext):
 
 def parameter_6(update: Update, context: CallbackContext):
     user_input = update.effective_message.text
+    context.user_data.pop('Надпись', None)
 
     if user_input == 'ГЛАВНОЕ МЕНЮ':
         update.message.reply_text(
@@ -453,6 +456,7 @@ def parameter_6(update: Update, context: CallbackContext):
 def parameter_7(update: Update, context: CallbackContext):
     user_input = update.effective_message.text
     user_id = update.message.from_user.id
+    context.user_data.pop('Комментарий к заказу', None)
 
     if user_input == 'ГЛАВНОЕ МЕНЮ':
         update.message.reply_text(
@@ -601,6 +605,7 @@ def parameter_9(update:Update, context:CallbackContext):
 
 def to_order(update: Update, context: CallbackContext):
     user_input = update.effective_message.text
+    context.user_data.pop('Промокод', None)
 
     if user_input == 'ГЛАВНОЕ МЕНЮ':
         update.message.reply_text(
@@ -621,6 +626,7 @@ def to_order(update: Update, context: CallbackContext):
                                   reply_markup=ReplyKeyboardMarkup(pass_keyboard, resize_keyboard=True,
                                                                    one_time_keyboard=True))
         return 'TO_ORDER'
+
     order.update(
         {
             'Количество уровней': context.user_data.get('Количество уровней'),
@@ -634,19 +640,18 @@ def to_order(update: Update, context: CallbackContext):
             'Время доставки': context.user_data.get('Время доставки'),
             'Комментарий к заказу': context.user_data.get('Комментарий к заказу'),
             'Срочно': context.user_data.get('Срочно'),
+            'Промокод': user_input,
         }
     )
-    if user_input != 'Пропустить':
-        order.update({'Промокод': user_input})
-
+    if user_input == 'Пропустить':
+        order.update({'Промокод': 'Не применен'})
     total_price = 0
     for i in order.values():
         try:
             total_price += price.get(i)
         except:
             pass
-
-    if 'Надпись' in order:
+    if order['Надпись']:
         total_price += 500
     if order['Срочно'] == 'Да':
         total_price = int(total_price * 1.2)
@@ -655,7 +660,6 @@ def to_order(update: Update, context: CallbackContext):
             total_price = int(total_price * 0.8)
     except:
         pass
-
     order.update({'Стоимость': total_price})
 
     context.user_data['order'] = order
